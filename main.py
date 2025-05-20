@@ -117,11 +117,13 @@ async def on_message(message):
                 ]
             )
             await message.channel.send(response['choices'][0]['message']['content'])
-embed = discord.Embed(title="Munchkin tripped again...",
-                      description=f"```py\n{type(e).__name__}: {e}\n```",
-                      color=discord.Color.red())
-await message.channel.send(embed=embed)
-
+        except Exception as e:
+    embed = discord.Embed(
+        title="Munchkin tripped again...",
+        description=f"```py\n{type(e).__name__}: {e}\n```",
+        color=discord.Color.red()
+    )
+    await message.channel.send(embed=embed)
 
 # --- ADMIN & MODERATION COMMANDS ---
 @bot.command()
