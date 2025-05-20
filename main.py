@@ -93,6 +93,7 @@ async def rotate_status():
 
 # --- AI RESPONSE HANDLER ---
 async def fetch_munchkin_response(user_message: str):
+    last_error = None
     for attempt in range(3):
         try:
             response = await client.chat.completions.create(
@@ -104,11 +105,14 @@ async def fetch_munchkin_response(user_message: str):
             )
             return response.choices[0].message.content.strip()
         except RateLimitError:
+            last_error = e
             await asyncio.sleep(2 ** attempt)
         except APIError as e:
+            last_error = e
             print(f"[MUNCHKIN API ERROR] {e}")
             await asyncio.sleep(1)
         except Exception as e:
+            last_error 
             print(f"[MUNCHKIN FAIL] {e}")
             await asyncio.sleep(1)
     return f"Munchkin exploded xd || error : ```{str(last_error)}```"
