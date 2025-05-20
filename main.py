@@ -1,210 +1,117 @@
-import os
-import json
-import discord
-import openai
-import asyncio
-import random
-from discord.ext import commands
+import os import json import discord import openai import asyncio import random from discord.ext import commands
 
-# --- ENVIRONMENT VARIABLES ---
-DISCORD_TOKEN = os.environ['DISCORD_BOT_TOKEN']
-OPENAI_API_KEY = os.environ['OPENAI_API_KEY']
-openai.api_key = OPENAI_API_KEY
+--- ENVIRONMENT VARIABLES ---
 
-# --- DISCORD BOT SETUP ---
-intents = discord.Intents.default()
-intents.message_content = True
-intents.members = True
-bot = commands.Bot(command_prefix='/', intents=intents)
+DISCORD_TOKEN = os.environ['DISCORD_BOT_TOKEN'] OPENAI_API_KEY = os.environ['OPENAI_API_KEY'] openai.api_key = OPENAI_API_KEY
 
-# --- MUNCHKIN PERSONALITY PROMPT ---
-MUNCHKIN_PROMPT = """
-You are Munchkin, a chaotic gremlin AI who talks dramatically, loves snacks, cats, and protecting the server.
-You speak playfully but use your powers responsibly.
-"""
+--- DISCORD BOT SETUP ---
 
-# --- WARNINGS SYSTEM ---
-WARNINGS_FILE = "warnings.json"
-def load_warnings():
-    try:
-        with open(WARNINGS_FILE, "r") as f:
-            return json.load(f)
-    except FileNotFoundError:
-        return {}
+intents = discord.Intents.default() intents.message_content = True intents.members = True bot = commands.Bot(command_prefix='/', intents=intents)
 
-def save_warnings(data):
-    with open(WARNINGS_FILE, "w") as f:
-        json.dump(data, f, indent=2)
+--- MUNCHKIN PERSONALITY PROMPT ---
+
+MUNCHKIN_PROMPT = """ You are Munchkin, a chaotic gremlin AI who talks dramatically, loves snacks, cats, and protecting the server. You speak playfully but use your powers responsibly. """
+
+--- WARNINGS SYSTEM ---
+
+WARNINGS_FILE = "warnings.json" def load_warnings(): try: with open(WARNINGS_FILE, "r") as f: return json.load(f) except FileNotFoundError: return {}
+
+def save_warnings(data): with open(WARNINGS_FILE, "w") as f: json.dump(data, f, indent=2)
 
 warnings = load_warnings()
 
-# --- TALK CHANNELS SYSTEM ---
-TALK_CHANNELS_FILE = "talkchannels.json"
-def load_talk_channels():
-    try:
-        with open(TALK_CHANNELS_FILE, "r") as f:
-            return json.load(f)
-    except FileNotFoundError:
-        return []
+--- TALK CHANNELS SYSTEM ---
 
-def save_talk_channels(data):
-    with open(TALK_CHANNELS_FILE, "w") as f:
-        json.dump(data, f, indent=2)
+TALK_CHANNELS_FILE = "talkchannels.json" def load_talk_channels(): try: with open(TALK_CHANNELS_FILE, "r") as f: return json.load(f) except FileNotFoundError: return []
+
+def save_talk_channels(data): with open(TALK_CHANNELS_FILE, "w") as f: json.dump(data, f, indent=2)
 
 talk_channels = load_talk_channels()
 
-# --- WELCOME SYSTEM ---
+--- WELCOME SYSTEM ---
+
 welcome_channel_id = None
 
-# --- BOT STATUS ROTATION (DISCORD RPC) ---
-status_options = [
-    ("Playing", "Minecraft"),
-    ("Playing", "Roblox"),
-    ("Playing", "with code"),
-    ("Listening", "my favorite people"),
-    ("Listening", "server gossip"),
-    ("Watching", "the mods work"),
-    ("Watching", "you..."),
-    ("Streaming", "Replit"),
-    ("Streaming", "something sus")
-]
+--- BOT STATUS ROTATION (DISCORD RPC) ---
 
-async def rotate_status():
-    await bot.wait_until_ready()
-    while not bot.is_closed():
-        activity_type, text = random.choice(status_options)
+status_options = [ ("Playing", "Minecraft"), ("Playing", "Roblox"), ("Playing", "with code"), ("Listening", "my favorite people"), ("Listening", "server gossip"), ("Watching", "the mods work"), ("Watching", "you..."), ("Streaming", "Replit"), ("Streaming", "something sus") ]
 
-        if activity_type == "Playing":
-            activity = discord.Game(name=text)
-        elif activity_type == "Listening":
-            activity = discord.Activity(type=discord.ActivityType.listening, name=text)
-        elif activity_type == "Watching":
-            activity = discord.Activity(type=discord.ActivityType.watching, name=text)
-        elif activity_type == "Streaming":
-            activity = discord.Streaming(name=text, url="https://twitch.tv/munchkinbot")
-        else:
-            activity = discord.Game(name="with chaos")  # fallback
+async def rotate_status(): await bot.wait_until_ready() while not bot.is_closed(): activity_type, text = random.choice(status_options)
 
-        await bot.change_presence(activity=activity)
-        await asyncio.sleep(12)
+if activity_type == "Playing":
+        activity = discord.Game(name=text)
+    elif activity_type == "Listening":
+        activity = discord.Activity(type=discord.ActivityType.listening, name=text)
+    elif activity_type == "Watching":
+        activity = discord.Activity(type=discord.ActivityType.watching, name=text)
+    elif activity_type == "Streaming":
+        activity = discord.Streaming(name=text, url="https://twitch.tv/munchkinbot")
+    else:
+        activity = discord.Game(name="with chaos")  # fallback
 
-# --- AI CHAT HANDLER ---
-@bot.event
-async def on_message(message):
-    # Ignore messages from the bot itself
-    if message.author == bot.user:
+    await bot.change_presence(activity=activity)
+    await asyncio.sleep(12)
+
+--- AI RESPONSE HANDLER ---
+
+async def fetch_munchkin_response(user_message: str): try: for attempt in range(3): try: response = openai.ChatCompletion.create( model="gpt-3.5-turbo", messages=[ {"role": "system", "content": MUNCHKIN_PROMPT}, {"role": "user", "content": user_message} ] ) return response['choices'][0]['message']['content'].strip() except openai.error.RateLimitError: await asyncio.sleep(2 ** attempt) except Exception as e: print(f"[MUNCHKIN ERROR] {e}") return "Munchkin tripped on a very suspicious cable..."
+
+--- ON MESSAGE HANDLER ---
+
+@bot.event async def on_message(message): if message.author.bot: return
+
+ctx = await bot.get_context(message)
+if ctx.valid:
+    await bot.process_commands(message)
+    return
+
+mentioned = bot.user in message.mentions
+in_talk_channel = message.channel.id in talk_channels
+replied_to_munchkin = False
+
+if message.reference:
+    try:
+        ref = await message.channel.fetch_message(message.reference.message_id)
+        if ref.author == bot.user:
+            replied_to_munchkin = True
+    except:
+        pass
+
+if mentioned or replied_to_munchkin or in_talk_channel:
+    if not message.content.strip() or len(message.content) > 2000:
         return
 
-    # Check if the message is a valid command and let the bot process it
-    ctx = await bot.get_context(message)
-    if ctx.valid:
-        await bot.process_commands(message)
-        return
+    try:
+        async with message.channel.typing():
+            reply = await fetch_munchkin_response(message.content)
+            await message.channel.send(reply)
+    except Exception as e:
+        await message.channel.send("Munchkin exploded again... give her a second.")
+        print(f"[MUNCHKIN FAIL] {e}")
 
-    # Determine if Munchkin should respond
-    mentioned = bot.user in message.mentions
-    replied_to_munchkin = False
-    in_talk_channel = message.channel.id in talk_channels
+--- ADMIN & MODERATION COMMANDS ---
 
-    # Check if the message is a reply to Munchkin
-    if message.reference:
-        try:
-            ref_msg = await message.channel.fetch_message(message.reference.message_id)
-            if ref_msg and ref_msg.author == bot.user:
-                replied_to_munchkin = True
-        except Exception:
-            pass  # Silently ignore fetch errors
+@bot.command() @commands.has_permissions(administrator=True) async def setwelcome(ctx, channel: discord.TextChannel): global welcome_channel_id welcome_channel_id = channel.id await ctx.send(f"Welcome channel set to {channel.mention}")
 
-    # If Munchkin should respond, generate a response using OpenAI
-    if mentioned or replied_to_munchkin or in_talk_channel:
-        try:
-            response = openai.ChatCompletion.create(
-                model="gpt-3.5-turbo",
-                messages=[
-                    {"role": "system", "content": MUNCHKIN_PROMPT},
-                    {"role": "user", "content": message.content}
-                ]
-            )
-            reply_text = response['choices'][0]['message']['content'].strip()
-            if reply_text:
-                await message.channel.send(reply_text)
-            else:
-                await message.channel.send("Munchkin's mind is blank... try again?")
-        except Exception as e:
-            await message.channel.send("Munchkin tripped on a wire... (API error)")
-            print(f"OpenAI error: {e}")
+@bot.event async def on_member_join(member): if welcome_channel_id: channel = bot.get_channel(welcome_channel_id) if channel: await channel.send(f"Welcome! {member.mention} joined the server!")
 
-# --- ADMIN & MODERATION COMMANDS ---
-@bot.command()
-@commands.has_permissions(administrator=True)
-async def setwelcome(ctx, channel: discord.TextChannel):
-    global welcome_channel_id
-    welcome_channel_id = channel.id
-    await ctx.send(f"Welcome channel set to {channel.mention}")
+@bot.command() @commands.has_permissions(administrator=True) async def sett(ctx): channel_id = ctx.channel.id if channel_id not in talk_channels: talk_channels.append(channel_id) save_talk_channels(talk_channels) await ctx.send(f"{ctx.channel.mention} is now a Munchkin chat zone.") else: await ctx.send(f"{ctx.channel.mention} is already a Munchkin chat zone.")
 
-@bot.event
-async def on_member_join(member):
-    if welcome_channel_id:
-        channel = bot.get_channel(welcome_channel_id)
-        if channel:
-            await channel.send(f"Welcome! {member.mention} joined the server!")
+@bot.command() @commands.has_permissions(ban_members=True) async def ban(ctx, member: discord.Member, *, reason=None): await member.ban(reason=reason) await ctx.send(f"{member.mention} has been banned. Reason: {reason or 'no reason given'}")
 
-@bot.command()
-@commands.has_permissions(administrator=True)
-async def sett(ctx):
-    channel_id = ctx.channel.id
-    if channel_id not in talk_channels:
-        talk_channels.append(channel_id)
-        save_talk_channels(talk_channels)
-        await ctx.send(f"{ctx.channel.mention} is now a Munchkin chat zone.")
-    else:
-        await ctx.send(f"{ctx.channel.mention} is already a Munchkin chat zone.")
+@bot.command() @commands.has_permissions(kick_members=True) async def kick(ctx, member: discord.Member, *, reason=None): await member.kick(reason=reason) await ctx.send(f"{member.mention} has been kicked. Reason: {reason or 'no reason given'}")
 
-@bot.command()
-@commands.has_permissions(ban_members=True)
-async def ban(ctx, member: discord.Member, *, reason=None):
-    await member.ban(reason=reason)
-    await ctx.send(f"{member.mention} has been banned. Reason: {reason or 'no reason given'}")
+@bot.command() @commands.has_permissions(manage_messages=True) async def warn(ctx, member: discord.Member, *, reason=None): user_id = str(member.id) if user_id not in warnings: warnings[user_id] = [] warnings[user_id].append(reason or "No reason.") save_warnings(warnings) await ctx.send(f"{member.mention} has been warned. Reason: {reason}")
 
-@bot.command()
-@commands.has_permissions(kick_members=True)
-async def kick(ctx, member: discord.Member, *, reason=None):
-    await member.kick(reason=reason)
-    await ctx.send(f"{member.mention} has been kicked. Reason: {reason or 'no reason given'}")
+@bot.command(name="warnings") async def warnings_cmd(ctx, member: discord.Member): user_id = str(member.id) user_warnings = warnings.get(user_id, []) if not user_warnings: await ctx.send(f"{member.mention} has no warnings.") else: msg = "\n".join(f"{i+1}. {w}" for i, w in enumerate(user_warnings)) await ctx.send(f"Warnings for {member.mention}:\n{msg}")
 
-@bot.command()
-@commands.has_permissions(manage_messages=True)
-async def warn(ctx, member: discord.Member, *, reason=None):
-    user_id = str(member.id)
-    if user_id not in warnings:
-        warnings[user_id] = []
-    warnings[user_id].append(reason or "No reason.")
-    save_warnings(warnings)
-    await ctx.send(f"{member.mention} has been warned. Reason: {reason}")
+@bot.command() @commands.has_permissions(manage_messages=True) async def clearwarn(ctx, member: discord.Member): user_id = str(member.id) warnings[user_id] = [] save_warnings(warnings) await ctx.send(f"Warnings for {member.mention} have been cleared.")
 
-@bot.command(name="warnings")
-async def warnings_cmd(ctx, member: discord.Member):
-    user_id = str(member.id)
-    user_warnings = warnings.get(user_id, [])
-    if not user_warnings:
-        await ctx.send(f"{member.mention} has no warnings.")
-    else:
-        msg = "\n".join(f"{i+1}. {w}" for i, w in enumerate(user_warnings))
-        await ctx.send(f"Warnings for {member.mention}:\n{msg}")
+--- READY EVENT ---
 
-@bot.command()
-@commands.has_permissions(manage_messages=True)
-async def clearwarn(ctx, member: discord.Member):
-    user_id = str(member.id)
-    warnings[user_id] = []
-    save_warnings(warnings)
-    await ctx.send(f"Warnings for {member.mention} have been cleared.")
+@bot.event async def on_ready(): print(f"Munchkin is online as {bot.user}!") bot.loop.create_task(rotate_status())
 
-# --- READY EVENT ---
-@bot.event
-async def on_ready():
-    print(f"Munchkin is online as {bot.user}!")
-    bot.loop.create_task(rotate_status())
+--- START THE BOT ---
 
-# --- START THE BOT ---
 bot.run(DISCORD_TOKEN)
+
