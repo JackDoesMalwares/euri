@@ -1,16 +1,16 @@
 import os
 import json
 import discord
-import openai
-import openai.error
 import asyncio
 import random
+from openai import OpenAI
+from openai.types import APIError, RateLimitError
 from discord.ext import commands
 
 # --- ENVIRONMENT VARIABLES ---
 DISCORD_TOKEN = os.environ['DISCORD_BOT_TOKEN']
 OPENAI_API_KEY = os.environ['OPENAI_API_KEY']
-openai.api_key = OPENAI_API_KEY
+client = OpenAI(api_key=OPENAI_API_KEY)
 
 # --- DISCORD BOT SETUP ---
 intents = discord.Intents.default()
@@ -76,7 +76,6 @@ async def rotate_status():
     await bot.wait_until_ready()
     while not bot.is_closed():
         activity_type, text = random.choice(status_options)
-
         if activity_type == "Playing":
             activity = discord.Game(name=text)
         elif activity_type == "Listening":
@@ -87,7 +86,6 @@ async def rotate_status():
             activity = discord.Streaming(name=text, url="https://twitch.tv/munchkinbot")
         else:
             activity = discord.Game(name="with chaos")  # fallback
-
         await bot.change_presence(activity=activity)
         await asyncio.sleep(12)
 
@@ -95,19 +93,23 @@ async def rotate_status():
 async def fetch_munchkin_response(user_message: str):
     for attempt in range(3):
         try:
-            response = openai.ChatCompletion.create(
+            response = client.chat.completions.create(
                 model="gpt-4o",
                 messages=[
                     {"role": "system", "content": MUNCHKIN_PROMPT},
                     {"role": "user", "content": user_message}
                 ]
             )
-            return response['choices'][0]['message']['content'].strip()
-        except openai.error.RateLimitError:
+            return response.choices[0].message.content.strip()
+        except RateLimitError:
             await asyncio.sleep(2 ** attempt)
+        except APIError as e:
+            print(f"[MUNCHKIN API ERROR] {e}")
+            await asyncio.sleep(1)
         except Exception as e:
-            print(f"[MUNCHKIN ERROR] {e}")
-    return "Munchkin tripped on a very suspicious cable..."
+            print(f"[MUNCHKIN FAIL] {e}")
+            await asyncio.sleep(1)
+    return "Munchkin tripped on a suspicious cable..."
 
 # --- ON MESSAGE HANDLER ---
 @bot.event
@@ -135,7 +137,6 @@ async def on_message(message):
     if mentioned or replied_to_munchkin or in_talk_channel:
         if not message.content.strip() or len(message.content) > 2000:
             return
-
         try:
             async with message.channel.typing():
                 reply = await fetch_munchkin_response(message.content)
