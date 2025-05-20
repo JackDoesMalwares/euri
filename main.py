@@ -91,39 +91,48 @@ async def rotate_status():
 # --- AI CHAT HANDLER ---
 @bot.event
 async def on_message(message):
+    # Ignore messages from the bot itself
     if message.author == bot.user:
         return
 
+    # Check if the message is a valid command and let the bot process it
     ctx = await bot.get_context(message)
     if ctx.valid:
         await bot.process_commands(message)
         return
 
+    # Determine if Munchkin should respond
     mentioned = bot.user in message.mentions
-    replied_to_munchkin = (
-        message.reference and
-        (ref_msg := await message.channel.fetch_message(message.reference.message_id)) and
-        ref_msg.author == bot.user
-    )
+    replied_to_munchkin = False
     in_talk_channel = message.channel.id in talk_channels
 
+    # Check if the message is a reply to Munchkin
+    if message.reference:
+        try:
+            ref_msg = await message.channel.fetch_message(message.reference.message_id)
+            if ref_msg and ref_msg.author == bot.user:
+                replied_to_munchkin = True
+        except Exception:
+            pass  # Silently ignore fetch errors
+
+    # If Munchkin should respond, generate a response using OpenAI
     if mentioned or replied_to_munchkin or in_talk_channel:
         try:
             response = openai.ChatCompletion.create(
-                model="gpt-4o",
+                model="gpt-3.5-turbo",
                 messages=[
                     {"role": "system", "content": MUNCHKIN_PROMPT},
                     {"role": "user", "content": message.content}
                 ]
             )
-            await message.channel.send(response['choices'][0]['message']['content'])
+            reply_text = response['choices'][0]['message']['content'].strip()
+            if reply_text:
+                await message.channel.send(reply_text)
+            else:
+                await message.channel.send("Munchkin's mind is blank... try again?")
         except Exception as e:
-    embed = discord.Embed(
-        title="Munchkin tripped again...",
-        description=f"```py\n{type(e).__name__}: {e}\n```",
-        color=discord.Color.red()
-    )
-    await message.channel.send(embed=embed)
+            await message.channel.send("Munchkin tripped on a wire... (API error)")
+            print(f"OpenAI error: {e}")
 
 # --- ADMIN & MODERATION COMMANDS ---
 @bot.command()
