@@ -68,7 +68,9 @@ status_options = [
     ("Listening", "server gossip"),
     ("Watching", "the mods work"),
     ("Watching", "you..."),
-    ("Streaming", "Replit"),
+    ("Streaming", "Railway"),
+    ("Streaming", "GitHub"),
+    ("Playing", "The Source Code on GitHub!"),
     ("Streaming", "something sus")
 ]
 
