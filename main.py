@@ -110,15 +110,17 @@ async def on_message(message):
     if mentioned or replied_to_munchkin or in_talk_channel:
         try:
             response = openai.ChatCompletion.create(
-                model="gpt-3.5-turbo",
+                model="gpt-4o",
                 messages=[
                     {"role": "system", "content": MUNCHKIN_PROMPT},
                     {"role": "user", "content": message.content}
                 ]
             )
             await message.channel.send(response['choices'][0]['message']['content'])
-        except Exception:
-            await message.channel.send("Munchkin tripped again...")
+        except Exception as e:
+    await message.channel.send("Munchkin tripped again...")
+    await message.channel.send(f"```{type(e).__name__}: {e}```")
+
 
 # --- ADMIN & MODERATION COMMANDS ---
 @bot.command()
