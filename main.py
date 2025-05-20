@@ -111,7 +111,7 @@ async def fetch_munchkin_response(user_message: str):
         except Exception as e:
             print(f"[MUNCHKIN FAIL] {e}")
             await asyncio.sleep(1)
-    return "Munchkin exploded xd || error : ```{str(last_error)}```")
+    return "Munchkin exploded xd || error : ```{str(last_error)}```"
 
 # --- ON MESSAGE HANDLER ---
 @bot.event
