@@ -95,7 +95,7 @@ async def rotate_status():
 async def fetch_munchkin_response(user_message: str):
     for attempt in range(3):
         try:
-            response = client.chat.completions.create(
+            response = await client.chat.completions.create(
                 model="gpt-4o",
                 messages=[
                     {"role": "system", "content": MUNCHKIN_PROMPT},
