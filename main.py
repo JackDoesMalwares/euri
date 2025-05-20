@@ -61,7 +61,7 @@ status_options = [
     ("Playing", "Minecraft"),
     ("Playing", "Roblox"),
     ("Playing", "with code"),
-    ("Listening", "to my favorite people"),
+    ("Listening", "my favorite people"),
     ("Listening", "server gossip"),
     ("Watching", "the mods work"),
     ("Watching", "you..."),
@@ -117,9 +117,10 @@ async def on_message(message):
                 ]
             )
             await message.channel.send(response['choices'][0]['message']['content'])
-        except Exception as e:
-    await message.channel.send("Munchkin tripped again...")
-    await message.channel.send(f"```{type(e).__name__}: {e}```")
+embed = discord.Embed(title="Munchkin tripped again...",
+                      description=f"```py\n{type(e).__name__}: {e}\n```",
+                      color=discord.Color.red())
+await message.channel.send(embed=embed)
 
 
 # --- ADMIN & MODERATION COMMANDS ---
