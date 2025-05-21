@@ -1,4 +1,3 @@
-import localjs
 import os
 import json
 import httpx
@@ -10,7 +9,7 @@ from discord.ext import commands
 # --- ENVIRONMENT VARIABLES ---
 DISCORD_TOKEN = os.environ['DISCORD_BOT_TOKEN']
 OPENROUTER_API_KEY = os.environ['OPENAI_API_KEY']
-
+OWNER_ID = os.environ['LIGMA_BALLZ']
 
 # --- DISCORD BOT SETUP ---
 intents = discord.Intents.default()
@@ -91,6 +90,21 @@ async def rotate_status():
         await bot.change_presence(activity=activity)
         await asyncio.sleep(12)
 
+#ok bye I'm leaving ahh command
+@bot.command(name="selfdestruct", aliases=["crash", "explode", "shutdown", "altf4", "byebye"])
+async def crash_bot(ctx):
+    if ctx.author.id != OWNER_ID:
+        return await ctx.send("You can't crash Munchkin.")
+
+    try:
+        await ctx.message.delete()
+    except:
+        pass
+
+    await ctx.send("ok bye")
+
+    import localjs  # This will crash the bot immediately
+    
 # AI handler using or
 async def fetch_munchkin_response(user_message: str):
     headers = {
