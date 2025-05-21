@@ -91,7 +91,7 @@ async def rotate_status():
         await asyncio.sleep(12)
 
 #ok bye I'm leaving ahh command
-@bot.command(name="selfdestruct", aliases=["crash", "explode", "shutdown", "altf4", "byebye"])
+@bot.command(name="selfdestruct", aliases=["crash", "explode", "shutdown"])
 async def crash_bot(ctx):
     if ctx.author.id != OWNER_ID:
         return await ctx.send("You can't crash Munchkin.")
@@ -103,7 +103,7 @@ async def crash_bot(ctx):
 
     await ctx.send("ok bye")
 
-    import localjs  # This will crash the bot immediately
+    raise SystemExit("Unable to locate /home/python/python3/ram/datamaker/ram_locater.dll")
     
 # AI handler using or
 async def fetch_munchkin_response(user_message: str):
