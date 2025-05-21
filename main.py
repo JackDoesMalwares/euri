@@ -104,16 +104,16 @@ async def fetch_munchkin_response(user_message: str):
                 ]
             )
             return response.choices[0].message.content.strip()
-        except RateLimitError:
-            last_error = e
+        except RateLimitError as err:
+            last_error = err
             await asyncio.sleep(2 ** attempt)
-        except APIError as e:
-            last_error = e
-            print(f"[MUNCHKIN API ERROR] {e}")
+        except APIError as err:
+            last_error = err
+            print(f"[MUNCHKIN API ERROR] {err}")
             await asyncio.sleep(1)
-        except Exception as e:
-            last_error 
-            print(f"[MUNCHKIN FAIL] {e}")
+        except Exception as err:
+            last_error = err
+            print(f"[MUNCHKIN FAIL] {err}")
             await asyncio.sleep(1)
     return f"Munchkin exploded xd || error : ```{str(last_error)}```"
 
