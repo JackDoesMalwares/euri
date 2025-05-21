@@ -15,7 +15,7 @@ OWNER_ID = os.environ['LIGMA_BALLZ']
 intents = discord.Intents.default()
 intents.message_content = True
 intents.members = True
-bot = commands.Bot(command_prefix='/', intents=intents)
+bot = commands.Bot(command_prefix='?', intents=intents)
 
 # --- MUNCHKIN PERSONALITY PROMPT ---
 MUNCHKIN_PROMPT = """
