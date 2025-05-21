@@ -92,32 +92,32 @@ async def rotate_status():
         await bot.change_presence(activity=activity)
         await asyncio.sleep(12)
 
-# --- AI RESPONSE HANDLER ---
+# AI handler using or
 async def fetch_munchkin_response(user_message: str):
-    last_error = None
-    for attempt in range(3):
-        try:
-            response = await client.chat.completions.create(
-                model="gpt-4o",
-                messages=[
-                    {"role": "system", "content": MUNCHKIN_PROMPT},
-                    {"role": "user", "content": user_message}
-                ]
-            )
-            return response.choices[0].message.content.strip()
-        except RateLimitError as err:
-            last_error = err
-            await asyncio.sleep(2 ** attempt)
-        except APIError as err:
-            last_error = err
-            print(f"[MUNCHKIN API ERROR] {err}")
-            await asyncio.sleep(1)
-        except Exception as err:
-            last_error = err
-            print(f"[MUNCHKIN FAIL] {err}")
-            await asyncio.sleep(1)
-    return f"Munchkin exploded xd || error : ```{str(last_error)}```"
+    headers = {
+        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+        "Content-Type": "application/json",
+        "HTTP-Referer": "https://yourapp.com",  # optional but recommended
+        "X-Title": "MunchkinBot"
+    }
 
+    payload = {
+        "model": "meta-llama/llama-3-8b-instruct",
+        "messages": [
+            {"role": "system", "content": MUNCHKIN_PROMPT},
+            {"role": "user", "content": user_message}
+        ]
+    }
+
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.post("https://openrouter.ai/api/v1/chat/completions", headers=headers, json=payload)
+            response.raise_for_status()
+            return response.json()['choices'][0]['message']['content'].strip()
+    except httpx.HTTPStatusError as err:
+        return f"Munchkin panicked. LLaMA said: ```{err.response.text}```"
+    except Exception as err:
+        return f"Munchkin fell down the stairs: ```{str(err)}```"
 # --- ON MESSAGE HANDLER ---
 @bot.event
 async def on_message(message):
