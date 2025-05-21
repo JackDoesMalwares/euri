@@ -4,8 +4,6 @@ import httpx
 import discord
 import asyncio
 import random
-from openai import OpenAI
-from openai import OpenAIError, RateLimitError, APIConnectionError
 from discord.ext import commands
 
 # --- ENVIRONMENT VARIABLES ---
