@@ -103,7 +103,8 @@ async def crash_bot(ctx):
 
     await ctx.send("ok bye")
 
-    raise SystemExit("Unable to locate /home/python/python3/ram/datamaker/ram_locater.dll")
+    raise SystemExit("Unable to locate /home/python/python3/ram/datamaker/ram_locater.dll | Stopping main.py to stop further corruptions")
+    os._exit(1) 
     
 # AI handler using or
 async def fetch_munchkin_response(user_message: str):
