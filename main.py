@@ -11,7 +11,7 @@ from discord.ext import commands
 # --- ENVIRONMENT VARIABLES ---
 DISCORD_TOKEN = os.environ['DISCORD_BOT_TOKEN']
 OPENROUTER_API_KEY = os.environ['OPENAI_API_KEY']
-client = OpenAI(api_key=OPENAI_API_KEY)
+
 
 # --- DISCORD BOT SETUP ---
 intents = discord.Intents.default()
