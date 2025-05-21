@@ -9,7 +9,7 @@ from discord.ext import commands
 # --- ENVIRONMENT VARIABLES ---
 DISCORD_TOKEN = os.environ['DISCORD_BOT_TOKEN']
 OPENROUTER_API_KEY = os.environ['OPENAI_API_KEY']
-OWNER_ID = os.environ['LIGMA_BALLZ']
+OWNER_ID = int(os.environ['LIGMA_BALLZ']) 
 
 # --- DISCORD BOT SETUP ---
 intents = discord.Intents.default()
