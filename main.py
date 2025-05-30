@@ -4,7 +4,7 @@ import httpx
 import discord
 import asyncio
 import random
-from memory_loadd import load_memory, save_memory
+from memory_loadd import initialize_memory, load_memory, save_memory, close_db
 from discord.ext import commands
 
 # --- ENVIRONMENT VARIABLES ---
@@ -238,7 +238,8 @@ async def clearwarn(ctx, member: discord.Member):
 @bot.event
 async def on_ready():
     print(f"Munchkin is online as {bot.user}!")
+    await initialize_memory()  # Initialize DB once on startup
     bot.loop.create_task(rotate_status())
-
+    
 # --- START THE BOT ---
 bot.run(DISCORD_TOKEN)
