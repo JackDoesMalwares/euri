@@ -4,6 +4,7 @@ import httpx
 import discord
 import asyncio
 import random
+from memory_loadd import load_memory, save_memory
 from discord.ext import commands
 
 # --- ENVIRONMENT VARIABLES ---
