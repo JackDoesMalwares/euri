@@ -1,10 +1,7 @@
-# memory_loadd.py
-
 import aiosqlite
-import asyncio
 
 DB_FILE = "server_memory.db"
-db = None  # Global DB connection
+db = None
 
 async def initialize_memory():
     global db
@@ -38,8 +35,7 @@ async def save_memory(guild_id: int, data: str):
         print(f"[ERROR] save_memory failed: {e}")
 
 async def close_db():
+    global db
     if db:
         await db.close()
-
-# Example usage in your bot startup:
-# await initialize_memory()
+        db = None
