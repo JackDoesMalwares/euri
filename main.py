@@ -92,7 +92,16 @@ async def rotate_status():
         await bot.change_presence(activity=activity)
         await asyncio.sleep(12)
 
-#ok bye I'm leaving ahh command
+# --- MEMORY MANAGEMENT: Save every message per guild in DB ---
+async def update_memory(guild_id: int, new_data: str):
+    try:
+        existing = await load_memory(guild_id)
+        updated = (existing + "\n" + new_data) if existing else new_data
+        await save_memory(guild_id, updated)
+    except Exception as e:
+        print(f"[ERROR] update_memory failed: {e}")
+
+# --- SELFDESTRUCT COMMAND ---
 @bot.command(name="selfdestruct", aliases=["crash", "explode", "shutdown"])
 async def crash_bot(ctx):
     if ctx.author.id != OWNER_ID:
@@ -105,10 +114,10 @@ async def crash_bot(ctx):
 
     await ctx.send("ok bye")
 
-    raise SystemExit("Unable to locate /home/python/python3/ram/datamaker/ram_locater.dll | Stopping main.py to stop further corruptions")
+    raise SystemExit("Forced shutdown by owner command")
     os._exit(1) 
-    
-# AI handler using or
+
+# --- AI handler using OpenRouter ---
 async def fetch_munchkin_response(user_message: str):
     headers = {
         "Authorization": f"Bearer {OPENROUTER_API_KEY}",
@@ -134,11 +143,17 @@ async def fetch_munchkin_response(user_message: str):
         return f"Munchkin panicked. LLaMA said: ```{err.response.text}```"
     except Exception as err:
         return f"Munchkin fell down the stairs: ```{str(err)}```"
+
 # --- ON MESSAGE HANDLER ---
 @bot.event
 async def on_message(message):
     if message.author.bot:
         return
+
+    # Save every message to memory DB by guild ID
+    if message.guild:
+        content_to_save = f"{message.author.display_name}: {message.content}"
+        await update_memory(message.guild.id, content_to_save)
 
     ctx = await bot.get_context(message)
     if ctx.valid:
@@ -240,6 +255,11 @@ async def on_ready():
     print(f"Munchkin is online as {bot.user}!")
     await initialize_memory()  # Initialize DB once on startup
     bot.loop.create_task(rotate_status())
-    
+
+# --- SHUTDOWN CLEANUP ---
+@bot.event
+async def on_disconnect():
+    await close_db()
+
 # --- START THE BOT ---
 bot.run(DISCORD_TOKEN)
